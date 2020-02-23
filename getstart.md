@@ -1,8 +1,12 @@
-# 杀戮尖塔MOD入门教程
+
+
+# 杀戮尖塔MOD入门教程 
 
 
 ## 简介
-杀戮尖塔的MOD都需要modthespire,stslib和basemod这三大支持库来支持，杀戮尖塔mod的本质是在游戏本体中通过第三方API 来添加自己的代码
+杀戮尖塔的MOD都需要modthespire,stslib和basemod这三大支持库来支持，杀戮尖塔mod的本质是在游戏本体中通过第三方API [^1]来添加自己的代码
+
+[^1]: 应用程序接口，提供了代码抽象功能。
 
 
 ```mermaid
@@ -35,4 +39,9 @@ A[游戏本体] --> B(ModTheSpire)
 
 ### 搭建mod开发环境
 
-杀戮尖塔由java语言编写，为了搭建mod这种大型java工程，我们可以使用IDE（集成开发环境）。目前主流的IDE
+杀戮尖塔由java语言编写，为了搭建mod这种大型java工程，我们可以使用IDE（集成开发环境）。目前主流的java IDE[^2]有Eclipse和Intelij idea。本教程后面将以IJ作为示例进行讲解。  
+这两种IDE可以在官网上下载，其中Eclipse和Intelij的社区版都是免费的，可以直接使用。点击上文中的超链接即可
+
+
+
+[^2]: 集成开发环境，除了文中介绍的关于java的IDE。还常用visual studio或者xcode用于开发。

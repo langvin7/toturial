@@ -63,7 +63,7 @@ A[游戏本体] --> B(ModTheSpire)
 ![alt 新建maven](pic3.png)
 2. 进去之后如下编辑pom.xml：
 
-```xml
+```xml{.line-numbers}
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -159,7 +159,7 @@ A[游戏本体] --> B(ModTheSpire)
     - src是程序的主体部分，分成main和test两部分，其中test是maven自动生成的测试文件夹，maven会自动处理好相关细节。最重要的是main文件夹，java是我们存放代码的地方，而resource文件夹用于存放角色或卡面等图片或json格式的文字素材。  
 
 这时我们可以在resource目录下写入```ModTheSpire.json```，该文件向ModTheSpire标识了该Mod的加载信息，格式如下：
-```json
+```json{.line-numbers}
 {
   "modid": "totuiral",
   "name": "totuiralMod",

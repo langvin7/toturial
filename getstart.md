@@ -3,6 +3,26 @@
 # 杀戮尖塔MOD入门教程 
 
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [杀戮尖塔MOD入门教程](#杀戮尖塔mod入门教程)
+  - [简介](#简介)
+  - [准备工作](#准备工作)
+    - [游戏本体安装](#游戏本体安装)
+    - [下载必要的mod支持库](#下载必要的mod支持库)
+    - [搭建mod开发环境](#搭建mod开发环境)
+      - [IDE的安装](#ide的安装)
+      - [maven环境配置](#maven环境配置)
+  - [开始构建项目](#开始构建项目)
+    - [构建步骤](#构建步骤)
+    - [测试构建效果](#测试构建效果)
+    - [作业](#作业)
+
+<!-- /code_chunk_output -->
+[TOC]
+
 ## 简介
 杀戮尖塔的MOD都需要modthespire,stslib和basemod这三大支持库来支持，杀戮尖塔mod的本质是在游戏本体中通过第三方API [^1]来添加自己的代码
 
@@ -19,7 +39,7 @@ A[游戏本体] --> B(ModTheSpire)
 
 杀戮尖塔本体是由java语言构建的，构建方式属于典型的面向对象式的。具体而言就是将众多方法分类封装，然后在程序需要的时候调用。对此，mod代码也可以仿照杀戮尖塔的本体结构来搭建。
 
-![alt 图片](pic1.png)
+![alt 图片](img/pic1.png)
 
 *图2 杀戮尖塔游戏本体代码结构*
 
@@ -58,9 +78,11 @@ A[游戏本体] --> B(ModTheSpire)
 
 ## 开始构建项目
 
+### 构建步骤
+
 至此我们完成了开发环境的配置，可以进行mod的开发工作了。下面以IJ为例来介绍如何构建一个项目：
 1. 打开ij，新建一个maven项目，不勾选选择框。随后填写项目名和文件地址。(本项目取名为tutorial作为示例)
-![alt 新建maven](pic3.png)
+![alt 新建maven](img/pic3.png)
 2. 进去之后如下编辑pom.xml：
 
 ```xml{.line-numbers}
@@ -108,7 +130,7 @@ A[游戏本体] --> B(ModTheSpire)
     </dependencies>
 
     <build>
-        <finalName>KoitakuMod</finalName>
+        <finalName>tutorialMod</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -142,7 +164,7 @@ A[游戏本体] --> B(ModTheSpire)
 </project>
 ```
 
-这段代码是maven的配置信息，其中包含了以下关键点：
+在输入完代码后右下角会显示maven配置发生更改，此时选择import Changes即可。这段代码是maven的配置信息，其中包含了以下关键点：
 
 - 这段代码的意思向指定目标文件夹输出编译好的jar文件，jar文件是代码包，也是所有mod的使用格式。在游玩时mod加载器会加载代码包中的文件，或者使用代码包中的代码覆盖游戏代码。version指的是版本控制中的版本号。
 
@@ -153,12 +175,14 @@ A[游戏本体] --> B(ModTheSpire)
 - build部分是关于jar的编译输出的，这里提示了maven的运作规律，会先生成测试文件夹，然后再将测试文件夹生成的文件拷贝到目标文件夹。
 
 3. 此时可以看出文件的组织结构如下：
-![alt 组织结构](pic4.png)
+![alt 组织结构](img/pic4.png)
 其中： 
     - .idea文件夹是IDE的辅助文件，与mod本身无关。
     - src是程序的主体部分，分成main和test两部分，其中test是maven自动生成的测试文件夹，maven会自动处理好相关细节。最重要的是main文件夹，java是我们存放代码的地方，而resource文件夹用于存放角色或卡面等图片或json格式的文字素材。  
 
-这时我们可以在resource目录下写入```ModTheSpire.json```，该文件向ModTheSpire标识了该Mod的加载信息，格式如下：
+这时我们可以在resource目录下写入```ModTheSpire.json```[^3]，该文件向ModTheSpire标识了该Mod的加载信息，格式如下：
+[^3]:右键resource目录，选择New-file，将新建文件改名为ModTheSpire.json并编辑即可。
+
 ```json{.line-numbers}
 {
   "modid": "totuiral",
@@ -172,3 +196,24 @@ A[游戏本体] --> B(ModTheSpire)
 }
 ```
 Json文件中用花括号{}代表代码块，方括号[]代表数组，要注意他们的配对。这样我们就完成了mod初期的搭建工作。
+
+### 测试构建效果
+
+构建框架的目的是为了输出mod文件，格式为jar。为此我们要进行maven的package操作来测试搭建效果：
+![alt maven操作](img/pic5.png)
+    点击右边的maven侧边，展开Lifecycle，这个指的是程序在输出执行的步骤。我们在这些步骤中双击package即可像杀戮尖塔的mod文件夹输出jar格式的mod。也可以点击上面的m按钮，在其中输入```mvn package```。
+
+如果输出成功后，在steam中用withmod模式打开杀戮尖塔，即可在ModTheSpire画面中看到你刚才输出的文件中的标识信息。
+![alt 信息](img/pic6.png)
+
+在界面中我们勾选Basemod和ModTheSpire，以及刚刚输出的mod（toturialMod），然后选择运行就可以进入游戏。
+![alt 信息](img/pic7.png)
+
+游戏中进入mod菜单，我们可以看到我们写下的标识信息，但是因为没有写任何代码，这个mod暂时还没有任何功能。
+### 作业
+1. 仿照上文的方式，输出一个jar格式的mod文件并在游戏中运行。给mod取一个名字，并在作者（Author）一栏写上你的ID。
+2. 研读加载mod时ModTheSpire的log框中的信息，尝试揣测他们是什么意思。
+
+# Mod开发语法基础
+
+施工中

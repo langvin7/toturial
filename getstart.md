@@ -18,8 +18,8 @@
   - [开始构建项目](#开始构建项目)
     - [构建步骤](#构建步骤)
     - [测试构建效果](#测试构建效果)
-    - [作业](#作业)
-  - [Mod开发语法基础](#mod开发语法基础)
+    - [作业1](#作业1)
+  - [Mod语法基础](#mod语法基础)
     - [创建新mod](#创建新mod)
     - [控制台输出](#控制台输出)
     - [函数基础](#函数基础)
@@ -27,13 +27,23 @@
       - [函数](#函数)
       - [类](#类)
       - [作用域](#作用域)
-      - [作业](#作业-1)
-    - [Mod开发初步](#mod开发初步)
+    - [作业2](#作业2)
+  - [Mod结构构造](#mod结构构造)
       - [监听函数](#监听函数)
-      - [引用](#引用)
-      - [继承](#继承)
+    - [引用](#引用)
+    - [继承](#继承)
+      - [继承关系](#继承关系)
+      - [抽象与多态](#抽象与多态)
+      - [接口](#接口)
+    - [Mod结构](#mod结构)
+    - [反编译](#反编译)
+    - [作业3](#作业3)
+  - [Mod方法的实现](#mod方法的实现)
+    - [添加自定义元素](#添加自定义元素)
 
 <!-- /code_chunk_output -->
+
+
 
 ## 简介
 杀戮尖塔的MOD都需要modthespire,stslib和basemod这三大支持库来支持，杀戮尖塔mod的本质是在游戏本体中通过第三方API [^1]来添加自己的代码
@@ -219,11 +229,11 @@ Json文件中用花括号{}代表代码块，方括号[]代表数组，要注意
 ![alt 信息](img/pic7.png)
 
 游戏中进入mod菜单，我们可以看到我们写下的标识信息，但是因为没有写任何代码，这个mod暂时还没有任何功能。
-### 作业
+### 作业1
 1. 仿照上文的方式，输出一个jar格式的mod文件并在游戏中运行。给mod取一个名字，并在作者（Author）一栏写上你的ID。
 2. 研读加载mod时ModTheSpire的log框中的信息，尝试揣测他们是什么意思。
 
-## Mod开发语法基础
+## Mod语法基础
 
 ### 创建新mod
 
@@ -264,10 +274,10 @@ System.out.print("end of line!\n2+2="+4);//此处+代表文本之间相连，\n�
 
 
 
-###函数基础
+### 函数基础
 除了输出字符，mod最重要的还是跟游戏中的各种行为进行互动。而这些依赖于java的函数，由于java是由各种各样的类构成的，所以函数都是成员函数（或称方法）。
 
-####变量
+#### 变量
 
 函数可以用于处理输入和输出（也可以都不处理），为了表述输入这种行为，我们引入了变量去衡量输入的值。变量可以随着数值的不同而改变自己的值。在杀戮尖塔经常用的是这几种变量：整形，浮点型，布尔型，字符串型。
 
@@ -291,7 +301,7 @@ public final String HELLO="Hello world!";
 3. 名称：变量的名称一般使用大小写混合，以小写开头，避免使用单字母变量。如果带有final属性则表示为常量，名字全部用大写并使用下划线分隔单词。
 4. 初始化：变量使用=赋值，在创建变量时赋值被称为初始化。未初始化的变量不能直接访问，需要赋值后访问。常量必须初始化。
 
-####函数
+#### 函数
 
 函数具有输入端和输出端，表示方法如下：
 
@@ -316,9 +326,9 @@ private void hello(){
 ```
 此处使用了void标识符来表示没有返回值，return语句单纯表示跳出函数，可以省略等函数所有语句正常执行完自动跳出。
 
-####类
+#### 类
 
-java的基本代码单元就是类，在杀戮尖塔里面类有着非常清晰地实际意义。你使用的卡都是这种卡中的其中一张（对象），生成的一个电球也属于电球这个类型的一员。所以函数和变量都是放在类里面去讨论的，例如电球就具有放电攻击敌人，激发等函数，他的伤害作为变量又能随时受到集中值的影响。
+java的基本代码单元就是类，在杀戮尖塔里面类有着非常清晰地实际意义。你使用的卡都是这种卡中的其中一张（对象），生成的一个电球也属于电球这个类型的一员。所以函数（成员函数也称**方法**）和变量都是放在类里面去讨论的，例如电球就具有放电攻击敌人，激发等函数，他的伤害作为变量又能随时受到集中值的影响。
 
 类具有对象，而作为类的对象又能在其他类中使用。在一场战斗中，战场上就具有卡类的对象，玩家类的对象以及怪物类的对象同时出现。所以对象具有很重要的地位，申明一个对象的代码如下：
 ```Java
@@ -347,14 +357,21 @@ public class Toturial {
 
 首先这里面具有一个构造函数，我们发现构造函数没有类型标识符，因为它必然不能被用于直接调用而返回一个参数。在```Initialize()```方法里面我们就通过构造函数创建了该mod的对象传入ModTheSpire，从而让ModTheSpire识别我们的Mod。
 
-####作用域
+#### 作用域
 之前我们多次提到了public和private这两个重要属性，为什么会有这种区别？public代表其具有全局属性，包括类。IDE为了结构的整齐性，强制要求公有类必须以单独文件的形式存在，这样就可以通过其他类中调用该类来实现类的全局化。调用公有类使用```import```：
 
 ```Java
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 ```
 
-其中最后一个单词代表类名，前面的单词代表该类所在的包名，这种格式十分类似于文件与文件夹。其他类只有通过这种方式才能访问到该公有类中的成员和函数。而其他类也只可访问这个类中的公有成员和函数，不能访问私有的。
+其中最后一个单词代表类名，前面的单词代表该类所在的包名，这种格式十分类似于文件与文件夹。其他类只有通过这种方式才能访问到该公有类中的成员和函数。而其他类也只可访问这个类中的公有成员和函数，不能访问私有的。我们也可以用*通配符搜索并调用该包中的所有类：
+```Java 
+import com.evacipated.cardcrawl.modthespire.lib.*;
+```
+但是这种方式无法调用的该包中其他包中的类,也就是说：~~我封臣的封臣不是我的封臣~~
+```Java
+import com.evacipated.cardcrawl.modthespire.*; //这种方法无法调用com.evacipated.cardcrawl.modthespire.lib.SpireInitializer
+```
 
 作用域中还有一个属性非常重要，一般的成员都归对象所有，比如说手牌上有很多张打击，如果一张打击受到干瘪的手影响，这时其他打击的费用仍然是不变的。说明虽然都为打击类的对象，但是他们的成员能量是互不干涉的。但是如果具有```static```静态属性的话这个成员或者函数就归为类所有，所有该类对象都能共享这个静态成员和方法。我们也就不需要再用对象去访问他了，可以直接用类本身去访问。
 
@@ -367,7 +384,8 @@ int dam=a.damage;//dam变量得到的是某张打击“a”的伤害值
 int summary=strike.sum //summary得到的是打击这个类总共生成了多少张打击卡
 ```
 
-####作业
+
+### 作业2
 以下提供了一个监听(hook)函数，根据给出的代码和提示实现以下功能：(改编自basemodWiki)
 ```Java{.line-numbers}
 package toturial;
@@ -407,11 +425,11 @@ public class Toturial implements OnPlayerDamagedSubscriber,PostBattleSubscriber 
 ```
 请在类中和函数体内补充代码，使得log能够输出每次战斗玩家受到的伤害总和。
 
-###Mod开发初步
+## Mod结构构造
 
-通过上面的讲述，我们对类和函数有了初步的认识。现在我们将这些知识运用在实际的Mod开发，并来补充学习类与函数其他特性。
+通过上面的讲述，我们对类和函数有了初步的认识。我们接下来补充类和函数，进而来构造杀戮尖塔Mod所需要的结构。
 
-####监听函数
+#### 监听函数
 
 我们将函数的知识用于对游戏的互动来看，我们可以通过ModeTheSpire来让mod接受游戏中的行为，并用监听函数来对游戏内的行为做出反应。
 
@@ -448,7 +466,7 @@ public class Toturial implements PostDrawSubscriber {
 
 这段代码中涉及到了很多类的特性，接下来将逐步讲解。
 
-####引用
+### 引用
 
 我们使用该程序再次做实验，这次我们先在初始化的时候交换两个int变量，之后再对抽取到的卡牌进行操作，观察结果：
 
@@ -529,10 +547,297 @@ Boolean b = new Boolean(False);//对应boolean
 ```
 这种封装处理在之后的泛型操作中也会体现到。
 
-####继承
+### 继承
 
 机器人具有多种能量球，但是这些能量球都有共同的行为：有共同的活动区域，能被激发，每回合会执行某种操作，能够响应弹幕齐射或者编译冲击。我们为了归纳这些种类不同但是本质上都是能量球的类型，我们引入了继承的概念。
 
 首先我们创建一个总体的能量球类，然后再让各种各样的能量球继承这个能量球类。这样我们既可以在父类中兼顾到他们的共性，也能实现他们具有的不同的功能。这是面向对象设计的核心内容，也是杀戮尖塔mod制作的核心概念。
 
-现在我们以一张卡牌的源代码为例来详细讲述继承的有关概念。
+现在我们以腐化的源代码为例来详细讲述继承的有关概念。
+
+```Java{.line-numbers}
+package com.megacrit.cardcrawl.cards.red;
+
+import com.badlogic.gdx.graphics.Color;
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.animations.VFXAction;
+import com.megacrit.cardcrawl.actions.common.ApplyPowerAction;
+import com.megacrit.cardcrawl.actions.utility.SFXAction;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.core.AbstractCreature;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.localization.CardStrings;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.AbstractPower;
+import com.megacrit.cardcrawl.powers.CorruptionPower;
+import com.megacrit.cardcrawl.vfx.AbstractGameEffect;
+import com.megacrit.cardcrawl.vfx.BorderLongFlashEffect;
+import com.megacrit.cardcrawl.vfx.combat.VerticalAuraEffect;
+
+public class Corruption extends AbstractCard {
+  public static final String ID = "Corruption";
+  
+  private static final CardStrings cardStrings = CardCrawlGame.languagePack.getCardStrings("Corruption");
+  
+  public Corruption() {
+    super("Corruption", cardStrings.NAME, "red/power/corruption", 3, cardStrings.DESCRIPTION, AbstractCard.CardType.POWER, AbstractCard.CardColor.RED, AbstractCard.CardRarity.RARE, AbstractCard.CardTarget.SELF);
+    this.baseMagicNumber = 3;
+    this.magicNumber = this.baseMagicNumber;
+  }
+  
+  public void use(AbstractPlayer p, AbstractMonster m) {
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.BLACK, p.hb.cX, p.hb.cY), 0.33F));
+    addToBot((AbstractGameAction)new SFXAction("ATTACK_FIRE"));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.PURPLE, p.hb.cX, p.hb.cY), 0.33F));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.CYAN, p.hb.cX, p.hb.cY), 0.0F));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new BorderLongFlashEffect(Color.MAGENTA), 0.0F, true));
+    boolean powerExists = false;
+    for (AbstractPower pow : p.powers) {
+      if (pow.ID.equals("Corruption")) {
+        powerExists = true;
+        break;
+      } 
+    } 
+    if (!powerExists)
+      addToBot((AbstractGameAction)new ApplyPowerAction((AbstractCreature)p, (AbstractCreature)p, (AbstractPower)new CorruptionPower((AbstractCreature)p))); 
+  }
+  
+  public void upgrade() {
+    if (!this.upgraded) {
+      upgradeName();
+      upgradeBaseCost(2);
+    } 
+  }
+  
+  public AbstractCard makeCopy() {
+    return new Corruption();
+  }
+}
+```
+
+这是官方代码中战士金卡腐化的代码，首先我们在腐化卡类的定义中找到了extends关键词，说明这个卡是继承自AbstructCard类。下面我们来简单介绍下这种继承关系的一些特性。
+
+#### 继承关系
+
+在继承关系中我们管被继承的类（这里指的是```AbstractCard```类）称作父类，而继承父类的类叫做子类（```Corruption```），继承关系表述子类具有父类方法和成员，并且比其他类拥有更高的权限来访问父类的成员。一个类只能有一个父类，但是父类却能有很多子类。（树形结构）
+
+除了public和private属性，java还有一种特殊的属性是protected，意思是只有类本身和子类能够访问该成员或者方法。子类中可以省略父类的包含的方法代码。比如腐化与其他卡的共同方法如果没有修改的必要（比如绘图的方法render），就可以不用特意写出，而是直接调用父类已有的方法。
+
+#### 抽象与多态
+我们截取父类的use方法：
+```Java
+    //节选自AbstractCard.java
+  public abstract void use(AbstractPlayer paramAbstractPlayer, AbstractMonster paramAbstractMonster);
+```
+
+我们发现这个方法有两点比较特殊，一是具有新的属性abstract，二是没有函数体。我们管这种方法叫做**抽象**方法，这种方法为子类提供了方法模板，子类可以任意修改该方法的内容。显然在游戏中使用不同的卡具有不同的效果，所以子类之间的```use()```方法并不相同，这种现象在面向对象编程中也叫**多态**。
+
+游戏mod制作也是在抽象方法基础上填写自己想要实现的功能，从而制造自己想要的卡牌或其他元素，来创造多态。在腐化类中腐化就重写了use方法：
+```Java{.line-numbers}
+public void use(AbstractPlayer p, AbstractMonster m) {
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.BLACK, p.hb.cX, p.hb.cY), 0.33F));
+    addToBot((AbstractGameAction)new SFXAction("ATTACK_FIRE"));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.PURPLE, p.hb.cX, p.hb.cY), 0.33F));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new VerticalAuraEffect(Color.CYAN, p.hb.cX, p.hb.cY), 0.0F));
+    addToBot((AbstractGameAction)new VFXAction((AbstractCreature)p, (AbstractGameEffect)new BorderLongFlashEffect(Color.MAGENTA), 0.0F, true));
+    boolean powerExists = false;
+    for (AbstractPower pow : p.powers) {
+      if (pow.ID.equals("Corruption")) {
+        powerExists = true;
+        break;
+      } 
+    } 
+    if (!powerExists)
+      addToBot((AbstractGameAction)new ApplyPowerAction((AbstractCreature)p, (AbstractCreature)p, (AbstractPower)new CorruptionPower((AbstractCreature)p))); 
+  }
+  ```
+
+这些代码的意思我们将在后面具体讲述，在这里我们需要知道腐化在这里将抽象方法use实际化，我们才得以在游戏过程中使用这张卡[^9]
+
+[^9]: ~~缺个树枝~~~
+
+#### 封装
+
+我们继续来看腐化的构造函数，这其中出现了两个新的关键词，我们来分别讲解。
+
+```Java{.line-numbers}
+
+  public Corruption() {
+    super("Corruption", cardStrings.NAME, "red/power/corruption", 3, cardStrings.DESCRIPTION, AbstractCard.CardType.POWER, AbstractCard.CardColor.RED, AbstractCard.CardRarity.RARE, AbstractCard.CardTarget.SELF);
+    this.baseMagicNumber = 3;
+    this.magicNumber = this.baseMagicNumber;
+  }
+  ```
+第一个是super关键词，这个意思是调用父类的对应函数，在这里也就是调用```AbstractCard```类的构造函数，在这里面我们像构造函数传入了数值来修改对应的成员。第二个是使用this关键词，this顾名思义表示的是正在调用这个方法的对象，通过this我们能够方便的对对象本身的成员进行操作。父类的构造函数收到这些变量会做出如下操作：
+```Java{.line-numbers}
+
+  public AbstractCard(String id, String name, String imgUrl, int cost, String rawDescription, CardType type, CardColor color, CardRarity rarity, CardTarget target, DamageInfo.DamageType dType) {
+    this.originalName = name;
+    this.name = name;
+    this.cardID = id;
+    this.assetUrl = imgUrl;
+    this.portrait = cardAtlas.findRegion(imgUrl);
+    this.jokePortrait = oldCardAtlas.findRegion(imgUrl);
+    if (this.portrait == null)
+      if (this.jokePortrait != null) {
+        this.portrait = this.jokePortrait;
+      } else {
+        this.portrait = cardAtlas.findRegion("status/beta");
+      }  
+    this.cost = cost;
+    this.costForTurn = cost;
+    this.rawDescription = rawDescription;
+    this.type = type;
+    this.color = color;
+    this.rarity = rarity;
+    this.target = target;
+    this.damageType = dType;
+    this.damageTypeForTurn = dType;
+    createCardImage();
+    if (name == null || rawDescription == null)
+      logger.info("Card initialized incorrecty"); 
+    initializeTitle();
+    initializeDescription();
+    updateTransparency();
+    this.uuid = UUID.randomUUID();
+  }
+```  
+
+  
+这种操作包含了一种思想，就是通过函数去修改对象的成员，而不是在外部类直接对对象成员进行修改。我们会发现这种成员一般都具有private或者protect的属性，这样可以做到只能通过类函数去修改而不是在外部修改。这种思想被称为**封装**，也是类设计中很重要的一环。
+
+#### 接口
+
+有的时候一个类可能是完全抽象的，这样我们可以将一个类定义为抽象类，用abstract属性修饰。或者我们可以把他写成一种特殊的类，叫做接口[^10]，用interface表示。接口的好处在于一个类虽然只能有一个父类，但是却能接入多个接口。在上面监听函数的实例中我们已经接触到了接口的概念。我们现在可以重新来审视这些代码来探究接口的性质。
+
+[^10]:抽象类与接口在方法实现上有着非常细致的差别，在杀戮尖塔mod开发过程中我们不用去深究。
+
+首先我们来回顾上面的监听抽牌的代码：
+```Java{.line-numbers}
+package toturial;
+
+import basemod.BaseMod;
+import basemod.interfaces.PostDrawSubscriber;
+import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+
+@SpireInitializer
+public class Toturial implements PostDrawSubscriber {
+    public Toturial() {
+        BaseMod.subscribe(this);
+    }
+    public static void initialize() {
+        new Toturial();
+        System.out.print("hello world! 5*6+30=");
+        System.out.print(5*6+30);
+        System.out.print("end of line!\n2+2="+4);//此处+代表文本之间相连，\n在此是一个字符，专门表示该行已结束。
+    }
+
+    @Override
+    public void receivePostDraw(AbstractCard abstractCard) {
+        System.out.println(abstractCard.name);//与print的区别在于println会自动换行
+    }
+}
+```
+在这里面我们有implements关键词表示该类接入了一个接口，这个接口来自于Basemod，用于监听抽牌时的情况。我们注意到这里有着@override关键词。这个是编译器注释的一种，旨在告诉编译器我们要复写接口中的抽象方法。由于抽象方法本身没有任何意义，所以不管是子类还是被接入的类都必须要复写来自于父类或接口的抽象方法，否则编译器会报错。现在我们再来观察接口的代码实现来验证我的想法。
+
+```Java{.line-numbers}
+package basemod.interfaces;
+
+import com.megacrit.cardcrawl.cards.DamageInfo;
+
+public interface OnPlayerDamagedSubscriber extends ISubscriber {
+    int receiveOnPlayerDamaged(int amount, DamageInfo info);
+}
+```
+
+由于接口所有方法都是抽象的，所以接口方法的类型并不需要abstract关键词。这里注意到一个细节，接口也有继承[^11]，表示接口之间也有共同的抽象方法。
+
+[^11]:事实上ISubscriber是个空接口，在这里只表明了一种接口之间的结构关系。如果父接口不是空接口，子接口还要注明父接口中的所有方法。
+
+### Mod结构
+
+综上所述，我们知道杀戮尖塔游戏以及mod都是由类的调用和继承组成的复杂网络，我们可以在这里简单的整理一下杀戮尖塔mod所需要的类结构：
+```mermaid
+graph TD
+ B1(抽象卡牌类)--继承-->B
+ C1(抽象遗物类)--继承-->C
+ D1(抽象角色类)--继承-->D
+ 
+
+ B(卡牌类)--调用--> A
+ C(遗物类)--调用-->  A
+ D(角色类)--调用--> A
+ E(其他类.......)--调用-->  A
+
+ I[监听接口]--接入-->A(hook主类)
+```
+*图4 杀戮尖塔mod的类结构*
+
+这些结构在文件上都是写在java文件夹中，表示用java代码进行面向对象设计。同时这些类还会调用位于resources文件夹中的图片或文字资源，形成总体的mod结构网络。总体而言接口负责提供方法让mod进行初始化植入游戏和监听游戏中的事件，而其他类的负责mod的代码实现。
+
+### 反编译
+jar格式的包不能直接打开，但是我们可以正常的用import调用jar中的类与方法。为了更好地研究包中的类，我们可以使用工具将jar拆成文件夹和内部的代码结构。例如我们可以直接拆开游戏本体来研究其中卡牌代码的实现。反编译的工具可以使用[jdgui](http://java-decompiler.github.io/)。
+
+![jdgui界面](img/pic12.png)
+
+使用方法为：Open File打开后可以在工具中观看jar内部结构，然后选择Save All Source保存整个jar中的文件为zip，解压后用ij打开解压后的文件夹即可开始研究内部代码。其他的反编译jar工具的用法也类似。需要注意的是，反编译后的jar与普通项目工程有很大不同，jar会主动将使用常量的部分转化为初始值。而且编译也会破坏项目的maven结构，反编译后无法直接重编译。
+
+### 作业3
+利用反编译工具拆包游戏主文件```desktop-1.0.jar```，它位于游戏根目录下。然后用IDE打开该文件夹研究代码：
+1. 双击shift，在出现的搜索栏中输入Frost.java，研究冰球代码。
+2. 再次双击shift，搜索其父类AbstractOrb.java，研究抽象的能量球代码。
+3. 以此说明父类具有哪些方法，分别具有什么类型，哪些方法被子类重写，子类是否有属于自己的方法。
+
+## Mod方法的实现
+
+### 添加自定义元素
+
+我们在类结构中得知，我们需要在主函数调用其他类文件，使得其他类文件能够被游戏探知。在游戏中我们使用basemod.jar提供的basemod.add方法来加入诸如卡牌遗物等物品，实例如下。
+
+```Java
+package toturial;
+
+import basemod.interfaces.*;
+import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
+import basemod.BaseMod;
+
+import toturial.cards.*;
+import toturial.relics.*;
+import toturial.character.*;
+
+@SpireInitializer
+public class Toturial implements EditCharactersSubscriber,EditCardsSubscriber,EditRelicsSubscriber  {
+
+
+    public Toturial() {
+        BaseMod.subscribe(this);
+    }
+
+    public static void initialize() {
+        new Toturial();
+    }
+
+
+    @Override
+    public void receiveEditCharacters() {
+        BaseMod.addCharacter(new MyCharcter(CardCrawlGame.playerName),
+                MY_CHARACTER_BUTTON,
+                MY_CHARACTER_PORTRAIT,
+                MyPlayerClassEnum.MY_PLAYER_CLASS);//加入新角色
+    }
+
+    @Override
+    public void receiveEditCards() {
+        BaseMod.addCard(new MyCard());//加入新卡牌
+    }
+
+    @Override
+    public void receiveEditRelics() {
+        BaseMod.addRelic(new MyRelic());//加入新遗物
+    }
+}
+```
+
+上面只是列举了一部分可以加入的成分，更多的加入接口可以在此查找。

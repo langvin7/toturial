@@ -1,0 +1,17 @@
+﻿文本类,描述
+MonsterStrings,怪物介绍
+PowerStrings,力量介绍
+CardStrings,卡片介绍
+RelicStrings,遗物介绍
+EventStrings,事件文本
+PotionStrings,药水介绍
+CreditStrings,致谢名单文本
+TutorialStrings,教程文本
+KeywordStrings,关键词文本（使用不同的方法加载）
+ScoreBonusStrings,分数奖励文本（如饕餮，卡牌收藏家）
+CharacterStrings,人物介绍
+UIStrings,UI文本
+OrbStrings,能量球介绍
+RunModStrings,自定义模式文本
+BlightStrings,荒疫箱文本
+AchievementStrings,成就文本

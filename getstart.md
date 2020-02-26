@@ -25,6 +25,7 @@
     - [函数基础](#函数基础)
       - [变量](#变量)
       - [函数](#函数)
+      - [重载](#重载)
       - [类](#类)
       - [作用域](#作用域)
     - [作业2](#作业2)
@@ -38,8 +39,27 @@
     - [Mod结构](#mod结构)
     - [反编译](#反编译)
     - [作业3](#作业3)
-  - [Mod方法的实现](#mod方法的实现)
+  - [方法实现的基础知识](#方法实现的基础知识)
+    - [结构式编程](#结构式编程)
+      - [判断结构](#判断结构)
+      - [运算顺序](#运算顺序)
+      - [循环结构](#循环结构)
+    - [常用类对象](#常用类对象)
+      - [String类](#string类)
+      - [数组](#数组)
+      - [ArrayList](#arraylist)
+      - [向上转型](#向上转型)
+      - [枚举类](#枚举类)
+    - [作业4](#作业4)
+  - [mod修改实例](#mod修改实例)
     - [添加自定义元素](#添加自定义元素)
+    - [添加文本](#添加文本)
+      - [添加描述文本](#添加描述文本)
+      - [Json描述文件格式](#json描述文件格式)
+      - [载入关键词](#载入关键词)
+    - [构建自定义类](#构建自定义类)
+      - [卡牌类](#卡牌类)
+        - [方法详解](#方法详解)
 
 <!-- /code_chunk_output -->
 
@@ -296,7 +316,7 @@ private float dot=2.4f;
 public static boolean judge=true;
 public final String HELLO="Hello world!";
 ```
-1. 属性：```public```表示它可以被类外的代码访问，```private```则表示只能在这个类里面被访问。```static```表示在函数结束后变量仍然被保留，```final```指变量的值不能被修改，表示一个常量。更多属性可以查阅相关java资料。
+1. 属性：```public```表示它可以被类外的代码访问，```private```则表示只能在这个类里面被访问。```static```表示在函数结束后变量仍然被保留，```final```指变量的值不能被修改，表示一个常量。更多属性可以查阅相关java资料。如果没有任何属性则表示该变量为default，作用域为同一个包的所有类。
 2. 标识符：用于表示变量的类型。
 3. 名称：变量的名称一般使用大小写混合，以小写开头，避免使用单字母变量。如果带有final属性则表示为常量，名字全部用大写并使用下划线分隔单词。
 4. 初始化：变量使用=赋值，在创建变量时赋值被称为初始化。未初始化的变量不能直接访问，需要赋值后访问。常量必须初始化。
@@ -325,6 +345,21 @@ private void hello(){
 }
 ```
 此处使用了void标识符来表示没有返回值，return语句单纯表示跳出函数，可以省略等函数所有语句正常执行完自动跳出。
+
+
+#### 重载
+
+只有传入对象完全一致的两个函数是一致的，也就是说如果同一个函数名接受不同的变量，也不会在使用中造成冲突。这种现象被称为**重载**，我们将会在杀戮尖塔mod制作中经常见到函数的重载。
+```Java{.line-numbers}
+public void hello(){
+  System.out.print("Hello world!");
+}
+public void hello(String s){
+  System.out.print("Hello "+s+"!");
+}
+```
+
+我们根据这个例子可以看出，函数重载可以提高函数输入的灵活性，也可以互相起到补充作用。
 
 #### 类
 
@@ -357,6 +392,8 @@ public class Toturial {
 
 首先这里面具有一个构造函数，我们发现构造函数没有类型标识符，因为它必然不能被用于直接调用而返回一个参数。在```Initialize()```方法里面我们就通过构造函数创建了该mod的对象传入ModTheSpire，从而让ModTheSpire识别我们的Mod。
 
+函数可以处理类的对象，是通过引用方式来传递的，后面我们还会具体讲解。
+
 #### 作用域
 之前我们多次提到了public和private这两个重要属性，为什么会有这种区别？public代表其具有全局属性，包括类。IDE为了结构的整齐性，强制要求公有类必须以单独文件的形式存在，这样就可以通过其他类中调用该类来实现类的全局化。调用公有类使用```import```：
 
@@ -384,6 +421,7 @@ int dam=a.damage;//dam变量得到的是某张打击“a”的伤害值
 int summary=strike.sum //summary得到的是打击这个类总共生成了多少张打击卡
 ```
 
+在函数作用域以及代码块作用域内（判断，循环）只允许使用默认变量，不能用public和private修饰。
 
 ### 作业2
 以下提供了一个监听(hook)函数，根据给出的代码和提示实现以下功能：(改编自basemodWiki)
@@ -790,13 +828,349 @@ jar格式的包不能直接打开，但是我们可以正常的用import调用ja
 2. 再次双击shift，搜索其父类AbstractOrb.java，研究抽象的能量球代码。
 3. 以此说明父类具有哪些方法，分别具有什么类型，哪些方法被子类重写，子类是否有属于自己的方法。
 
-## Mod方法的实现
+## 方法实现的基础知识
+
+
+
+### 结构式编程
+
+为了能够实现卡牌功能，我们需要编写代码来让卡牌完成任务。在java中计算机完成某一特定方法是过程化的。为了能让计算机过程化工作，我们需要了解过程化编程的基本知识。
+
+#### 判断结构
+
+在游戏过程中，各种元素要经常实现判断。比如说在有壁垒的的情况下格挡在回合结束不会消失，在遇到事件的时候事件要处理玩家不同的选择。在java中我们用if和else语句来判断各种复杂的逻辑关系。
+
+```Java
+public boolean T=true
+If(T)System.out.print("True")
+else System.out.print("False")
+```
+if可以直接接受boolean值，如果为真则执行if()后面的一条语句，为假如果存在则执行else后面的一条语句。一些逻辑运算也可以得到boolean型的结果：
+
+```Java
+public boolean A=3>4;
+public boolean B=3*9-6!=9;
+public boolean C=9==8;//Java中一个等号表示赋值，两个等号才表示判断相等。
+public boolean D=6<7&&0>2;//&&为与运算符，两边都为真总式子才为真。也可写成&
+public boolean E=6<7||0>2;//||为或运算符，两遍都为假总式子才为假。也可写成|
+public boolean F=!3<4;//!为非运算符，会颠倒后面式子的结果。
+boolean G=6==9^5!=3//^为异或运算符，同真假返回假，否则返回真，在尖塔mod编写中比较少见。
+```
+
+但是if后一般会跟上多行代码，而不会只有一条，这种情况我们可以将多行代码框在花括号中，编译器会将他们当成一行代码，这样的话也就可以设计多层循环，来满足多种多样的判断。
+
+```Java
+public boolean cast(){return false;}
+
+public void judge(){
+boolean on=true;
+boolean off=false;
+
+if(on && 4>3){
+  if(!off && 5!=6 || this.cast()){
+    }
+  }else{}//在嵌套循环中else与向上最近的未配对if配对。
+}
+```
+
+多重嵌套循环的可读性非常差，我们可以使用Switch来表示多重判断。他与if不同的是他处理的是整形变量而不是boolean，这样可以一次处理更多选项。
+
+```Java
+        int option = 99;
+        switch (option) {
+        case 1:
+            System.out.println("Selected 1");
+            break;
+        case 2:
+            System.out.println("Selected 2");
+            break;
+        case 3:
+            System.out.println("Selected 3");
+            break;
+        default:
+            System.out.println("Not selected");
+            break;
+        }
+```
+Switch使用Case来判断，如果传入的变量与case后面的数值一致，函数就立刻跳转到该case后执行，直到遇到break;才会跳出switch结构。如果case没有匹配上变量，则会执行default。所以在每个case结束后如果不想让他继续执行其他case，就不要忘记加上break。
+
+#### 运算顺序
+
+我们在进行数学和逻辑运算时会接触到非常多的运算符号，他们之间也具有运算顺序和优先级。这里只简单介绍几种常见运算符，更多的运算符顺序可以查阅[此处](https://baike.baidu.com/item/%E8%BF%90%E7%AE%97%E7%AC%A6%E4%BC%98%E5%85%88%E7%BA%A7/4752611?fr=aladdin)。
+
+```Java
+A a=new A();
+
+int sum=4*3+5*(2+6);//没有圆括号时就是正常的运算顺序，有圆括号先执行圆括号。赋值运算优先度是最低的。
+int mod=(4+20)%3*6;//%为取余操作，有着很多重要应用，比如周期性运算。他的优先级与乘除相同，同优先级从左到右执行。
+boolean isInIt=a instanceof A;//instanceof 的优先度与大于小于等于之类的判断大小优先度一样，他表示一个对象是否是某个类的对象。这些也是从左到右执行。这个优先度低于加减乘除
+boolean ok=true||false && isInIt;//与或的优先度比加减乘除更低，他们也是从左到右运算。
+int result=ok?sum:mod;//这个运算符是if的简化形式，称为三目运算符，如果最左边为true则返回问号后面，否则返回冒号后面。这个优先度更低，但是他是从右到左计算的。
+result*=6;//将运算符放在等号前面相当于是给变量本身做对应数字的运算。
+result++;//如果上面的目标数字为1的话可以把加减简化为++和--，称为自加和自减。
+```
+
+#### 循环结构
+
+有时我们想要执行多次某个操作，比如神化升级牌库中所有牌，心脏的多段攻击。这个时候我们不需要将同样的代码复制很多次，而只需要让他们进行特定次数的循环即可。循环也需要判断，因为我们不能让循环永远进行下去，我们要判断何时才能结束循环。所以循环体的代码包括了判断。
+
+最简单的循环是while循环，只需要每执行一次循环判断一个特定条件是否为真，如果为真就会循环，为假就跳出循环。while也分为在头部判断和尾部判断两种。
+
+```Java
+int sum1=0;
+int n1=1;
+while (n1 <= 100) { 
+            sum1 = sum1 + n1;
+            n1 ++; 
+        }//头循环
+
+int sum2=0；
+int n2=1;
+do{ 
+            sum2 = sum2 + n2; 
+            n2 ++; 
+}while(n2<100)
+//尾循环
+```
+
+还有一种方法是在循环体内做判断，然后根据判断作出相应的成果，在这里我们可以使用break和continue关键词来实现。
+```Java
+int sum=0;
+n=1;
+
+while (true) { 
+          if(n==100)break;//直接跳出循环
+          else if(n%2==0)continue;//直接开始进行下一次循环。
+          else sum+=n;//只记录奇数的加和
+        }
+```
+
+用for循环可以简写这种需要一个变量决定循环次数的结构：
+
+```Java
+int sum=0;
+
+for(int i=1;i<=100;i++){//for的圆括号中由三条语句组成，第一句是局部变量的声明，第二句是循环条件，第三局是循环结束后i变量的操作
+sum+=n;
+}
+```
+for循环括号内的变量为局部变量，在括号外即不可用。
+
+### 常用类对象
+
+在编写代码的过程中，一些特殊的类的对象会提高编码效率，例如之前提到的String类，以及ArrayList类。
+
+#### String类
+
+String是Java内部提供专门用于字符串处理的类型，但是他的声明方式与一般的类并不一样，而是与变量声明类似。
+
+```Java
+public String name="cat";
+public final String HELLO="Hello world!";
+```
+
+String有很多方法能够让我们处理字符串，较为完整的方法可以查看[此处](https://www.liaoxuefeng.com/wiki/1252599548343744/1260469698963456)或者api手册。这里示范几个常见的方法。
+
+```Java
+ String sum="1"+"5";//字符串的加法是拼接字符，与数学运算无关。这种原本运算符含义被改变的情景被称为运算符重载，Java不支持用户进行运算符重载。
+ String a=String.valueOf(123);
+ int num=Interger.parseInt("234");//调用Interger类方法将字符串转化为数字。
+ boolean isContain=sum.contains("1");//表示sum是否包含字符串"1"，也是游戏中内部关键字的实现机制。
+boolean isEqual=a.equals(sum);//对象用equals来表示两个对象里的所有成员是否完全相等，而不用==。
+```
+
+#### 数组
+
+有时我们想要一次创建多个变量，这种情况下我们可以创建一个数组。数组的长度不可变，但是运行效率比较高。字符串本质上也是由字符组成数组。
+
+```Java
+int[] n=new int[5];//创建了有五个元素的int数组。
+n[0]=1;//数组用方括号访问下标对应的元素，计数0开始
+//n[5]=0; [5]表示第六号元素，超出了原先数组定义的范围，使用数组中一定要注意避免下标越界。
+n[-1]=0;//负数下标表示倒数的元素，-1表示最后一个元素。
+char[] string={'H','e','l','l','o'};//char表示单个字符。占用一个字节，这也是初始化数组的一个方法。
+for(int i=0;i<5;i++){
+  n[i]=0;
+}//使用for循环赋值非常适合大规模数组的初始化。
+System.out.print(n.length);//.length方法可以访问数组的长度信息。
+```
+
+数组本身与对象一样属于引用，所以函数调用数组也会改变其中的数值。在c语言中数组名称表示的是该数组1号元素的地址，或者是迭代器。在Java中我们可以用一种for循环来表示迭代器，也就是foreach语法。
+
+```Java
+int[] ns = { 1, 4, 9, 16, 25 };
+        for (int n : ns) {//冒号表示使用临时变量来遍历数组中所有的元素，也可以是一个临时的对象。
+            System.out.println(n);
+        }
+    }
+```
+
+数组可以是变量数组，也可以是多个对象组成的数组，这样使用迭代器处理更加方便。
+
+#### ArrayList
+
+数组不能改变大小，也就无法实现元素的删改。Java为了处理这种需要增删操作的结构，提供了线性表List大类，其中一个子类ArrayList是我们在mod开发中经常会使用的类。他的对象表示一种可以删改元素的数组。
+
+```Java
+        ArrayList<AbstractRelic> list = new ArrayList<>();//尖括号内表示ArrayList对象中所装载的元素类型，这里表示的是遗物类
+        list.add(new Abacus()); // 算盘
+        list.add(new pear()); // 梨子
+        list.add(new Strawberry()); // 草莓
+        list.add(1,new Waffle());//在第一个元素后面加入一个新元素，也就是在算盘后面加入李家华夫饼。
+        list.remove(0);//删除0号元素，也就是第一个遗物算盘。这样李家华夫饼就重新成为0号元素。
+        list.get(2);//获得当前的2号元素，也就是草莓。
+        for(AbstractRelic c:list){//使用迭代器遍历表
+          if(c instanceof Waffle){//当遍历到李家华夫饼的时候，也就是当其中一个对象属于李家华夫饼类的时候
+
+          }
+        }
+        System.out.println(list.size());//输出表长
+```
+
+#### 向上转型
+
+上面我们创建了一个AbstractRelic类的表，却处理了很多子类对象。其实这里是一个父类引用，引用了子类的对象。这种转型称为向上转型，在游戏中也是非常多见的。
+
+我们来分析毒素蛋的代码就可以明白向上转型的概念。
+
+```Java{.line-numbers,highlight=32}
+package com.megacrit.cardcrawl.relics;
+
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.rewards.RewardItem;
+
+public class ToxicEgg2 extends AbstractRelic {
+  public static final String ID = "Toxic Egg 2";
+  
+  public ToxicEgg2() {
+    super("Toxic Egg 2", "toxicEgg.png", AbstractRelic.RelicTier.UNCOMMON, AbstractRelic.LandingSound.SOLID);
+  }
+  
+  public String getUpdatedDescription() {
+    return this.DESCRIPTIONS[0];
+  }
+  
+  public void onEquip() {
+    for (RewardItem reward : AbstractDungeon.combatRewardScreen.rewards) {
+      if (reward.cards != null)
+        for (AbstractCard c : reward.cards)
+          onPreviewObtainCard(c);  
+    } 
+  }
+  
+  public void onPreviewObtainCard(AbstractCard c) {
+    onObtainCard(c);
+  }
+  
+  public void onObtainCard(AbstractCard c) {
+    if (c.type == AbstractCard.CardType.SKILL && c.canUpgrade() && !c.upgraded)
+      c.upgrade(); 
+  }
+  
+  public boolean canSpawn() {
+    return (Settings.isEndless || AbstractDungeon.floorNum <= 48);
+  }
+  
+  public AbstractRelic makeCopy() {
+    return new ToxicEgg2();
+  }
+}
+```
+
+注意到32行，该方法用父类的引用接受了所有的卡牌，因为父类AbstractCard可以表示所有的卡牌，他的引用也理所当然的可以接受所有子类（卡牌）的对象。
+
+#### 枚举类
+
+前面我们提到了多项选择结构，是用整数进行的。如何给多项选择本身赋予意义，我们可以把用于多项选择的变量的每一个值赋予一个记号，这种方式叫枚举。比如在杀戮尖塔中有六种卡牌颜色，依次为红绿蓝紫无色诅咒。声明一个枚举的方式如下：
+```Java{.line-numbers}
+  enum CardColor {
+    RED, GREEN, BLUE, PURPLE, COLORLESS, CURSE;
+  }
+```
+枚举可以被运用在switch中，方便我们去做多项判断结构。
+```Java
+ CardColor color = CardColor.RED;
+  switch(color) {
+        case RED:
+        break;
+        case GREEN:
+        break;
+        case BLUE:
+        break;
+        case PURPLE:
+        break;
+        case COLORLESS:
+        break;
+        case CURSE:
+        break;
+        default:
+            throw new RuntimeException("no such color");//抛出一个异常，会被显示在log上。
+        }
+```
+
+### 作业4
+
+根据给出的代码和代码注释，补全代码使得原代码具有新功能。
+
+1. 以下为战士的打击代码，根据题干补全use()方法实现功能。
+```Java{.line-numbers}
+package com.megacrit.cardcrawl.cards.red;
+
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.DamageAction;
+import com.megacrit.cardcrawl.actions.common.DamageAllEnemiesAction;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.core.AbstractCreature;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.localization.CardStrings;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+
+public class Strike_Red extends AbstractCard {
+  public static final String ID = "Strike_R";
+  
+  private static final CardStrings cardStrings = CardCrawlGame.languagePack.getCardStrings("Strike_R");
+  
+  public Strike_Red() {
+    super("Strike_R", cardStrings.NAME, "red/attack/strike", 1, cardStrings.DESCRIPTION, AbstractCard.CardType.ATTACK, AbstractCard.CardColor.RED, AbstractCard.CardRarity.BASIC, AbstractCard.CardTarget.ENEMY);
+    this.baseDamage = 6;
+    this.tags.add(AbstractCard.CardTags.STRIKE);
+    this.tags.add(AbstractCard.CardTags.STARTER_STRIKE);
+  }
+  
+  public void use(AbstractPlayer p, AbstractMonster m) {
+      addToBot((AbstractGameAction)new DamageAction((AbstractCreature)m, new DamageInfo((AbstractCreature)p, this.damage, this.damageTypeForTurn), AbstractGameAction.AttackEffect.SLASH_DIAGONAL));//该语句为输出的核心语句
+    
+  }
+  
+  public void upgrade() {
+    if (!this.upgraded) {
+      upgradeName();
+      upgradeDamage(3);
+    } 
+  }
+  
+  public AbstractCard makeCopy() {
+    return new Strike_Red();
+  }
+}
+```
+当手牌中拥有三张或三张以上打击时，该打击伤害翻倍。（提示：AbstractDungeon.player.hand.group是包含所有手牌的ArrayList对象。）
+
+## mod修改实例
+
+上面的java基础知识已经足够我们应用框架去进行复杂的mod代码编写了，现在开始我们会接触很多修改实例来正式进入杀戮尖塔mod制作中。
 
 ### 添加自定义元素
 
 我们在类结构中得知，我们需要在主函数调用其他类文件，使得其他类文件能够被游戏探知。在游戏中我们使用basemod.jar提供的basemod.add方法来加入诸如卡牌遗物等物品，实例如下。
 
-```Java
+```Java{.line-numbers}
 package toturial;
 
 import basemod.interfaces.*;
@@ -840,6 +1214,272 @@ public class Toturial implements EditCharactersSubscriber,EditCardsSubscriber,Ed
 }
 ```
 
-上面只是列举了一部分可以加入的成分，更多的加入接口可以在此查找。
+上面只是列举了一部分可以加入的成分，更多的加入接口可以下方查找。
 
 * [basemod添加语法](reference\basemodAdd.md)
+
+### 添加文本
+
+#### 添加描述文本
+
+杀戮尖塔具有多语言支持，mod也可以在玩家选择不同语言时呈现出不同文本，这都是靠json来完成的。
+游戏可以根据文本的ID在Json文件中寻找对应的文本，且可以检测玩家的语言不同而加载的不同Json文件。唯一比较特殊的是加载关键词文件，关键词不是靠ID而是靠检测Json文件中所对应的字符串。
+
+```Java{.line-numbers}
+ @Override
+    public void receiveEditStrings() {
+        BaseMod.loadCustomStringsFile(RelicStrings.class, "totuiral/localization/totuiralRelicStrings.json");//此处运用了反射的写法，第一个参数是一个类对象，指的是遗物文本类的类对象。
+        
+    }
+```
+这种写法的弊端在于不能读取中文路径，为了支持UTF-8路径可以加入以下函数
+```Java{.line-numbers}
+ @Override
+    public void receiveEditStrings() {
+      String relic="totuiral/localization/totuiralRelicStrings.json";
+      String relicStrings= Gdx.files.internal(relic).readString(String.valueOf(StandardCharsets.UTF_8));//这个需要调用官方包，将该语句复制后即可自动调包。
+      BaseMod.loadCustomStringsFile(RelicStrings.class, relicStrings);
+    }
+```
+
+我们还可以加入语言判定，使得mod国际化。
+```Java{.line-numbers}
+ @Override
+    public void receiveEditStrings() {
+      String relic;
+      switch (Settings.language){
+            case ZHT:
+                relic = "localization/ZHT/relic.json";
+                break;
+            case ZHS:
+                relic = "localization/ZHS/relic.json";
+                break;
+            default:
+                relic = "localization/EN/relic.json";//若暂时没有某语言，则一律使用英文
+        }
+      String relicStrings = Gdx.files.internal(relic).readString(String.valueOf(StandardCharsets.UTF_8));
+      BaseMod.loadCustomStrings(RelicStrings.class, relicStrings);
+    }
+```
+以下是所有可以加载的文本类型，将上述代码中的RelicStrings参数改为以下文本类参数即可。
+
+@import "String.csv"
+
+#### Json描述文件格式
+
+所有的Json文件都是一个索引表，大致上有ID-代码块结构，在代码块内又有对应的参数。例如卡片的代码块格式
+```Json{.line-numbers}
+{
+  "A Thousand Cuts": {
+    "NAME": "凌迟",
+    "DESCRIPTION": "你每打出一张牌，就对所有敌人造成 !M! 点伤害。"
+  },
+  "Accuracy": {
+    "NAME": "精准",
+    "DESCRIPTION": "*小刀 造成的伤害增加 !M! 。"
+  },
+  "Acrobatics": {
+    "NAME": "杂技",
+    "DESCRIPTION": "抽 !M! 张牌。 NL 丢弃 1 张牌。"
+  },
+  "Adrenaline": {
+    "NAME": "肾上腺素",
+    "DESCRIPTION": "获得 [G] 。 NL 抽2张牌。 NL 消耗 。",
+    "UPGRADE_DESCRIPTION": "获得 [G] [G] 。 NL NL 抽2张牌。 NL 消耗 。"
+  },
+  "After Image": {
+    "NAME": "余像",
+    "DESCRIPTION": "你每打出一张牌，都获得1点 格挡 。",
+    "UPGRADE_DESCRIPTION": " 固有 。 NL 你每打出一张牌，都获得1点 格挡 。"
+  }
+}
+```
+这里的关键在于：
+
+- 整个Json文件被代码块所包围。
+- 每一个ID对应一个大代码块，用冒号来连接ID和代码块的关系
+- 每个大的ID下面都有很多小的项目，也是用冒号与内容直接相连。如果拥有多段描述则使用方括号[]与逗号相隔的数组形式。
+- 杀戮尖塔具有内部关键词，前后用空格隔开。NL用于表示换行，#r #g #b #y 可给对应的词上色，[E]可以表示能量点。伤害值!D! 格挡值!B! 卡牌技能值!M!。*可以给出外部卡（比如文中小刀）。（待补充）
+
+有的时候"DESCRIPTION"可能对应的是数组，这个时候就要根据方法的要求看是传入数组还是传入单个文本，如果传入单个文本就一定要用下标从数组中提取出元素再传入。
+```Json{.line-numbers}
+{
+   "Shadow": {
+  "NAME": "影流陀螺",
+  "FLAVOR": "“如果让你重新来过，你会不会爱我。”——影流之主",
+  "DESCRIPTIONS": [
+    "你每在你的回合丢弃一张牌，就获得 #b",
+    " 点 #y力量， ",
+    " 点 [E] ，抽",
+    " 张牌。"
+  ]},"Trans": {
+  "NAME": "智械核心",
+  "FLAVOR": "极其危险的高能核心",
+  "DESCRIPTIONS": [
+    "给予1层 智械形态 "
+  ]}
+}
+```
+
+这里"DESCRIPTIONS"后对应的是方括号数组，所以提取时要注意。
+
+用ID提取一般用```CardCrawlGame.languagePack.getCardStrings(ID);```方法，这个方法会返回一个对象，对象的成员名称就是其拥有的各种子项，如上文中的NAME(String) FLAVOR(String) DESCRIPTIONS(String数组)。
+#### 载入关键词
+
+载入关键词的语法要稍微不同，因为关键词不是使用ID检索，而是去检索其他Json中的词目来解释。关键词还有一个特点是具有容错，可以多个相似关键词对应一条。由于关键词API是分开传入关键词和描述部分，所以需要提取一个特定的json文件中的两个部分。下面来看关键词的实现：
+
+```Java{.line-numbers}
+  @Override
+  public void receiveEditKeywords() {
+    String keywordsPath;
+    logger.info("Setting up custom keywords");//也可使用System.out.print();
+    switch (Settings.language) {
+      case ZHT:
+        keywordsPath = "localization/ZHT/keywords.json";
+        break;
+      case ZHS:
+        keywordsPath = "localization/ZHS/keywords.json";
+        break;
+      default:
+        keywordsPath = "localization/EN/keywords.json";
+        break;
+    } 
+    Gson gson = new Gson();//Gson类对象可以用于处理json文件
+    Keywords keywords = (Keywords)gson.fromJson(loadJson(keywordsPath), Keywords.class);//再次通过反射得到keywords的类型，方便gson对象处理文件
+    Keyword[] var4 = keywords.keywords;//通过gson实例得到了分割后的对象数组，每个元素正好拥有Names数组和DESCRIPTION两个成员。
+    int var5 = var4.length;
+    for (int var6 = 0; var6 < var5; var6++) {
+      Keyword key = var4[var6];//遍历取得数组成员中的所有数组
+      logger.info("Loading keyword : " + key.NAMES[0]);//这里只会输出名称数组的第一个名称。
+      BaseMod.addKeyword(key.NAMES, key.DESCRIPTION);
+    } 
+    logger.info("Keywords setting finished.");
+  }
+
+  //这个是位于hook类外部的类，属性为default。声明类是为了方便反射得到类型。
+  class Keywords {
+    Keyword[] keywords;
+  }
+```
+
+关键词Json文件是这么构建的：
+```Java{.line-numbers}
+{
+  "keywords": [
+    {
+      "NAMES": [
+        "速度球"
+      ],
+      "DESCRIPTION": "可以增加敏捷的能量球。"
+    },
+    {
+      "NAMES": [
+        "力量球"
+      ],
+      "DESCRIPTION": "可以增加力量的能量球。"
+    }
+  ]
+}
+```
+先是有个总括的对应结构（map）keywords，要注意的是keywords后面方括号，表示由关键字组成的数组。每个关键词又各有一个代码框，框中包括名称数组和描述。
+
+### 构建自定义类
+
+卡牌，遗物，角色等事物都是由类搭建的，具体的类又是对应的各自抽象类的子类。所以搭建类就是要承接父类格式同时实现多态。我们现在就来介绍杀戮尖塔中几种类的具体构造。以下例子都摘自Basemod的[wiki](https://github.com/daviscook477/BaseMod/wiki)。
+
+#### 卡牌类
+
+卡牌类即是游戏中出现的各种卡牌，mod制作中的卡牌父类并不是官方的AbstractCard，而是由basemod提供的CustomCard类，这个类允许我们在自己的jar包中寻找素材，并且提供了自动处理卡面大小的方法。除此之外与AbstractCard子类是没有任何区别的，可以理解为CustomCard也是AbstractCard的子类，而且完全保留了除了细节处理以外的全部结构。
+
+```Java{.line-numbers}
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.ApplyPowerAction;
+import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.VulnerablePower;
+
+import basemod.abstracts.CustomCard;
+
+public class Flare
+extends CustomCard {
+    public static final String ID = "myModID:Flare";
+    private static CardStrings cardStrings = CardCrawlGame.languagePack.getCardStrings(ID);
+    // Get object containing the strings that are displayed in the game.
+    public static final String NAME = cardStrings.NAME;
+    public static final String DESCRIPTION = cardStrings.DESCRIPTION;
+    public static final String IMG_PATH = "img/my_card_img.png";
+    private static final int COST = 0;
+    private static final int ATTACK_DMG = 3;
+    private static final int UPGRADE_PLUS_DMG = 3;
+    private static final int VULNERABLE_AMT = 1;
+    private static final int UPGRADE_PLUS_VULNERABLE = 1;
+
+    public Flare() {
+        super(ID, NAME, IMG_PATH, COST, DESCRIPTION,
+        		AbstractCard.CardType.ATTACK, AbstractCard.CardColor.RED,
+        		AbstractCard.CardRarity.UNCOMMON, AbstractCard.CardTarget.ENEMY);
+        this.magicNumber = this.baseMagicNumber = VULNERABLE_AMT;
+        this.damage=this.baseDamage = ATTACK_DMG;
+        
+        this.setBackgroundTexture("img/custom_background_small.png", "img/custom_background_large.png");
+
+        this.setOrbTexture("img/custom_orb_small.png", "img/custom_orb_large.png");
+
+        this.setBannerTexture("img/custom_banner_large.png", "img/custom_banner_large.png");
+    }
+
+    @Override
+    public void use(AbstractPlayer p, AbstractMonster m) {
+    	AbstractDungeon.actionManager.addToBottom(new com.megacrit.cardcrawl.actions.common.DamageAction(m,
+				new DamageInfo(p, this.damage, this.damageTypeForTurn),
+				AbstractGameAction.AttackEffect.SLASH_DIAGONAL));
+    	AbstractDungeon.actionManager.addToBottom(new ApplyPowerAction(m, p, new VulnerablePower(m, this.magicNumber, false), this.magicNumber, true, AbstractGameAction.AttackEffect.NONE));
+    }
+
+    @Override
+    public AbstractCard makeCopy() {
+        return new Flare();
+    }
+
+    @Override
+    public void upgrade() {
+        if (!this.upgraded) {
+            this.upgradeName();
+            this.upgradeDamage(UPGRADE_PLUS_DMG);
+            this.upgradeMagicNumber(UPGRADE_PLUS_VULNERABLE);
+        }
+    }
+}
+```
+
+这个类里面有四个方法，包括一个构造方法和三个重写的抽象方法。每个方法中各有语句用于实现相关功能
+
+##### 方法详解
+
+- 构造方法```Flare()```用于调用```CustomCard```父类的构造方法，传入必要的信息来构建卡牌。这些信息对于卡牌是必要的。
+    - String 卡片ID：ID可用于在Json文本表中寻找相关的文字，一般ID命名要遵循"mod名:卡牌ID"的格式，以防与别的mod因为ID重合而冲突。
+    - String 名称name：可以事先用```CardCrawlGame.languagePack.getCardStrings(ID)```方法从Json寻找对应文本，然后用下标运算符寻找文本中的name成员。
+    - String 图标路径：CustomCard类可以自动处理路径。这里需要两张图片在同一文件夹，一张为*.png表示小图，另一张为*_p.png表示大图。在这只需要传入小图路径进入即可。路径可以用copy path命令处理，这里需要传入Path From Source Root。
+    - int COST ：基础卡费用
+    - String DESCRIPTION：也可以用```CardCrawlGame.languagePack.getCardStrings(ID)```提取，卡面描述。
+    - enmu type：牌的类型，有攻击技能能力状态诅咒
+    - enmu color：牌的颜色，有四种职业加上无色和诅咒。
+    - enmu rarity：稀有度，基础普通罕见稀有。
+    - enmu target：目标，如果有目标则需要选中目标，use方法接受的参数也不一样。
+  之后通过直接访问的方式设定基础攻击力和基础技能值（这里指上状态的层数），顺便将初始的攻击力和技能值赋成基础攻击力和基础技能值。后面的是重新设定卡面的背景设置，一般不修改使用事先传递好的背景图。
+
+- ```use()```方法表示使用这张卡时的动作。调用use方法的卡会进入一个对象CardQueueItem中，然后该CardQueueItem会进入CardQueue中排队。在这个流程结束后才会从手牌进入弃牌堆或消耗。当CardQueueItem排队结束后，会执行use中代码。use方法根据target属性决定是否要传入怪物，也就是玩家用这张卡时是否要指定一个目标。
+
+- ```makeCopy()```方法即复制卡牌方法，为了使战斗中临时效果不影响套牌，每场战斗开始会把套牌复制一份进入抽牌堆然后进行操作。这里只需要让他返回自身即可。但如果在战斗中想要改变牌库，就得在作用某卡时遍历牌库看两张卡是否相等，然后作用于牌库中该卡（因为卡片可能会受到临时效果影响，所以怎么判定两卡相等也需要考虑。） 
+
+- ```upgrade()```即升级时的操作，card类还继承了一个属性就是是否可以升级，一般的卡在执行完upgrade函数是否可以升级就会返回false，一些多次升级卡会强制改变这个函数使该值一直为true。
+
+这四个方法是所有卡必须拥有的方法，除此之外还有其他的方法对应不同的触发时机。其他的类设计也是如此，方法对应的是相应的触发时机。
+
+##### 方法的编写
+
+在杀戮尖塔中，最常见的命令就是```AbstractDungeon.actionManager.addToBottom```和```AbstractDungeon.actionManager.addToTop```。这两句都是向命令队列中加入命令，命令队列是一个ArrayList，从0号元素开始执行。addToBottom指的是加在最后，而addToTop指的是加在最前面直接执行。
+在这个use中加入是两个命令，第一个是进行攻击需要传入目标，攻击信息和特效。攻击信息中要传入来源伤害和伤害类型（有四种，主要决定是否会被荆棘反伤）。第二个是增加power，该命令会自动判断是否已经有该power，如果有的话就会直接加对应的层数，否则就将新构造的power传给目标，新构造的power的层数主要由power构造函数的初始化值决定。boolean参数为是否需要快速添加，一般都选false。

@@ -51,7 +51,7 @@
       - [向上转型](#向上转型)
       - [枚举类](#枚举类)
     - [作业4](#作业4)
-  - [mod修改实例](#mod修改实例)
+  - [mod修改技术](#mod修改技术)
     - [添加自定义元素](#添加自定义元素)
     - [添加文本](#添加文本)
       - [添加描述文本](#添加描述文本)
@@ -60,6 +60,16 @@
     - [构建自定义类](#构建自定义类)
       - [卡牌类](#卡牌类)
         - [方法详解](#方法详解)
+        - [命令队列](#命令队列)
+      - [遗物类](#遗物类)
+      - [其他类简析](#其他类简析)
+    - [修改实例分析](#修改实例分析)
+  - [高级修改技巧](#高级修改技巧)
+    - [哈希表](#哈希表)
+    - [反射](#反射)
+    - [泛型](#泛型)
+    - [函数式编程](#函数式编程)
+    - [修补主程序](#修补主程序)
 
 <!-- /code_chunk_output -->
 
@@ -114,6 +124,7 @@ A[游戏本体] --> B(ModTheSpire)
 2. 新建系统变量 **MAVEN_HOME** ，设置变量值：```E:\Maven\apache-maven-3.3.9```（若已存在则可跳过此步）
 3. 寻找系统变量 **Path** ，选择编辑，之后选择新建，写入```;%MAVEN_HOME%\bin```
 
+第一次配置maven需要较长时间下载支持库，属于正常现象。
 
 ## 开始构建项目
 
@@ -743,7 +754,9 @@ public void use(AbstractPlayer p, AbstractMonster m) {
 ```  
 
   
-这种操作包含了一种思想，就是通过函数去修改对象的成员，而不是在外部类直接对对象成员进行修改。我们会发现这种成员一般都具有private或者protect的属性，这样可以做到只能通过类函数去修改而不是在外部修改。这种思想被称为**封装**，也是类设计中很重要的一环。
+这种操作包含了一种思想，就是通过函数去修改对象的成员，而不是在外部类直接对对象成员进行修改。我们会发现这种成员一般都具有private或者protect的属性，这样可以做到只能通过类函数去修改而不是在外部修改。使得无需直接访问具体的成员，就能完成工作，这种思想被称为**封装**，也是类设计中很重要的一环。
+
+封装也提升了工作效率，当我们想要进行某种操作时，只需要调用框架搭建好的方法而不需要重新去修改源代码，这样既便捷也提升了安全性。
 
 #### 接口
 
@@ -792,7 +805,7 @@ public interface OnPlayerDamagedSubscriber extends ISubscriber {
 
 由于接口所有方法都是抽象的，所以接口方法的类型并不需要abstract关键词。这里注意到一个细节，接口也有继承[^11]，表示接口之间也有共同的抽象方法。
 
-[^11]:事实上ISubscriber是个空接口，在这里只表明了一种接口之间的结构关系。如果父接口不是空接口，子接口还要注明父接口中的所有方法。
+[^11]:事实上ISubscriber是个空接口，在这里只表明了一种接口之间的结构关系。
 
 ### Mod结构
 
@@ -1162,7 +1175,7 @@ public class Strike_Red extends AbstractCard {
 ```
 当手牌中拥有三张或三张以上打击时，该打击伤害翻倍。（提示：AbstractDungeon.player.hand.group是包含所有手牌的ArrayList对象。）
 
-## mod修改实例
+## mod修改技术
 
 上面的java基础知识已经足够我们应用框架去进行复杂的mod代码编写了，现在开始我们会接触很多修改实例来正式进入杀戮尖塔mod制作中。
 
@@ -1479,7 +1492,238 @@ extends CustomCard {
 
 这四个方法是所有卡必须拥有的方法，除此之外还有其他的方法对应不同的触发时机。其他的类设计也是如此，方法对应的是相应的触发时机。
 
-##### 方法的编写
+##### 命令队列
 
 在杀戮尖塔中，最常见的命令就是```AbstractDungeon.actionManager.addToBottom```和```AbstractDungeon.actionManager.addToTop```。这两句都是向命令队列中加入命令，命令队列是一个ArrayList，从0号元素开始执行。addToBottom指的是加在最后，而addToTop指的是加在最前面直接执行。
 在这个use中加入是两个命令，第一个是进行攻击需要传入目标，攻击信息和特效。攻击信息中要传入来源伤害和伤害类型（有四种，主要决定是否会被荆棘反伤）。第二个是增加power，该命令会自动判断是否已经有该power，如果有的话就会直接加对应的层数，否则就将新构造的power传给目标，新构造的power的层数主要由power构造函数的初始化值决定。boolean参数为是否需要快速添加，一般都选false。
+
+#### 遗物类
+
+```Java{.line-numbers}
+import basemod.abstracts.CustomRelic;
+import com.badlogic.gdx.graphics.Texture;
+import com.megacrit.cardcrawl.actions.AbstractGameAction;
+import com.megacrit.cardcrawl.actions.common.*;
+import com.megacrit.cardcrawl.core.AbstractCreature;
+import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.ImageMaster;
+import com.megacrit.cardcrawl.powers.AbstractPower;
+import com.megacrit.cardcrawl.powers.StrengthPower;
+import com.megacrit.cardcrawl.relics.AbstractRelic;
+
+
+public class Music extends CustomRelic {
+
+    public static final String ID = "Shadow";
+
+    private static final Texture IMG = ImageMaster.loadImage("image/relic/shadowtop.png");
+
+    private static final Texture OUTLINE = ImageMaster.loadImage("image/relic/shadowtop.png");
+
+    public Music() {
+        super(ID, IMG, OUTLINE, RelicTier.SPECIAL, LandingSound.FLAT);
+    }
+
+    public String getUpdatedDescription() {
+        return this.DESCRIPTIONS[0] + 1 + this.DESCRIPTIONS[1]+1 + this.DESCRIPTIONS[2]+1 + this.DESCRIPTIONS[3] ;
+    }
+
+    public void onManualDiscard() {
+        flash();
+        addToBot((AbstractGameAction)new RelicAboveCreatureAction((AbstractCreature)AbstractDungeon.player, this));
+        addToBot((AbstractGameAction)new ApplyPowerAction((AbstractCreature)AbstractDungeon.player, (AbstractCreature)AbstractDungeon.player, (AbstractPower)new StrengthPower((AbstractCreature)AbstractDungeon.player, 1), 1));
+        addToBot((AbstractGameAction)new GainEnergyAction(1));
+        addToBot((AbstractGameAction)new DrawCardAction((AbstractCreature)AbstractDungeon.player, 1));
+    }
+
+
+
+    public AbstractRelic makeCopy() {
+        return (AbstractRelic)new Music();
+    }
+}
+```
+
+- 这个类的理解方式与卡牌类类似，但是有两个地方不太一样。第一是描述是一个数组，这样方便在描述中插入变量。其次多了一个update（不是upgrade）相关方法，update方法指的是一种逐帧触发的方法，一般用于检测，但是不宜处理过多事物以免卡死。```getUpdatedDescription```可以实时接受变量并更新描述。
+- 构造函数要传入的是ID，图片（需要向ImageMaster.loadImage方法传入路径来得到，128x128大小图片，此处有[大小参考线](https://cdn.discordapp.com/attachments/484898639391621143/529958811570798592/unknown.png)），最后两项是稀有度和点击声音。
+- 这个遗物的触发时机是弃牌阶段，一般触发遗物是要先使用flash函数使其闪动，然后再执行 RelicAboveCreatureAction使得使用者头上出现遗物标志，之后在执行我们需要的操作。
+
+遗物类和卡牌类这两大类涵盖了大部分类的工作原理，如果想对其他具体事物（例如药水，能力）做出修改可以参考杀戮尖塔的api图表
+通过github（例如[Basemod](https://github.com/daviscook477/BaseMod/wiki)）或直接反编译拆包学习代码。
+
+#### 其他类简析
+
+### 修改实例分析
+
+## 高级修改技巧
+
+目前的修改仅限于对框架的调用，有的时候我们可能需要对原游戏的代码进行修改，显然如果我们直接修改jar是不现实的，也是不可移植的。所以ModTheSpire提供了一系列注解方法让我们得以对原游戏的代码进行补充。在此之前我们要补充一些Java基础知识。这些知识原理比较复杂，如果想要完全了解可以查阅相关资料，这里只做简单介绍，能够懂得mod构建中的应用即可。
+
+### 哈希表
+迄今为止我们接触了ArrayList这一结构，并且我们经常需要使用遍历方法搜索某一元素。HashMap结构方便我们快速检索，构建HashMap需要一个key和一个value，这与python的字典相类似。我们可以通过key快速检索，并且一个key只对应一个value，如果我们两次导入同一个key，只会冲刷掉前一次的value。
+
+```Java
+Map<String, Person> map = new HashMap<>();
+map.put("a", new Person("Xiao Ming"));
+map.put("b", new Person("Xiao Hong"));
+map.put("c", new Person("Xiao Jun"));
+
+map.get("a"); // Person("Xiao Ming")
+map.get("x"); // null
+```
+
+我们一般使用String作为密钥key，其他任意元素作为值，这样我们只要HashMap对象的get方法就可以快速检索元素。
+
+### 反射
+
+我们有的时候想要通过对象去得到类的相关信息，这种操作与我们之前通过类去创造对象是截然相反的。所以这种操作被称之为反射。反射的原理是在java中，类本身也是一个类。class类对象能够处理关于类的信息，这与java的编译原理[^12]有关。
+
+[^12]:Java在编译的过程中需要翻译类的信息，在这个过程需要class类提供类加载器将类文件转化为能够被识别的字节码。
+
+
+最简单的方法获得class类方法是对一个对象采用class方法，这个是java最源头的类Object类所提供的方法。例如我们在上面调用json加载器是使用过反射来使加载器能够识别json文件。
+```Java 
+Gson gson = new Gson();//Gson类对象可以用于处理json文件
+    Keywords keywords = (Keywords)gson.fromJson(loadJson(keywordsPath), Keywords.class);//再次通过反射得到keywords的类型，方便gson对象处理文件
+```
+
+反射还可以用于处理成员变量，或成员方法。这些知识我们将以后结合实例说明。
+
+
+### 泛型
+
+假如有一种方法我们不知道会传入什么类的对象，但希望他都能够有对应的方式来处理，这时我们就需要申明泛型方法。泛型在使用该对象的地方挖空，遇到有对象参数传入就把空白填上即可，这种泛型方法称为擦拭法。擦拭法不能直接处理变量，因为变量不能直接调用方法。泛型提供了一套模板，我们遇到对象就可以直接套在模板里面。我们之前见得最多的泛型就是ArrayList。
+
+```Java
+ ArrayList<AbstractRelic> list = new ArrayList<>();
+```
+
+这个里边<>部分就是模板，可以填入任意对象，创造任意对象的表。有时我们要同时处理多种对象，也需要运用这种方法。在杀戮尖塔中我们还有可能遇到泛型接口，比如Basemod提供的OnSave接口，OnSave接口使用了泛型使得我们可以保存任意变量。
+
+```Java{.line-numbers}
+public class MyCustomBottleRelic extends CustomRelic implements CustomBottleRelic, CustomSavable<Integer>
+{
+    private AbstractCard card;
+    // The field value you wish to save. 
+
+      @Override
+    public Integer onSave()
+    {
+        return AbstractDungeon.player.masterDeck.group.indexOf(card);
+        // Return the location of the card in your deck. AbstractCard cannot be serialized so we use an Integer instead.
+    }
+
+     @Override
+    public void onLoad(Integer cardIndex)
+    {
+    // onLoad automatically has the Integer saved in onSave upon loading into the game.
+
+        if (cardIndex == null) {
+            return;
+        }
+        if (cardIndex >= 0 && cardIndex < AbstractDungeon.player.masterDeck.group.size()) {
+            card = AbstractDungeon.player.masterDeck.group.get(cardIndex);
+            if (card != null) {
+                MyCustomBottledField.inCustomBottle.set(card, true);
+                setDescriptionAfterLoading();
+            }
+        }
+        // Uses the card's index saved before to search for the card in the deck and put it in a custom SpireField.
+    }
+}
+```
+在这里面我们使用了泛型接口，这个接口允许我们写返回值为任何类型的函数去覆盖接口中的抽象函数。
+
+```Java{.line-numbers}
+package basemod.abstracts;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
+public interface CustomSavable<T> extends CustomSavableRaw
+{
+    Gson saveFileGson = new Gson();
+
+    T onSave();
+    void onLoad(T object);
+
+    default Type savedType()
+    {
+        Class<?> clz = getClass();
+        for (Type t : clz.getGenericInterfaces()) {
+            if (t instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) t;
+                if (pt.getRawType().equals(CustomSavable.class)) {
+                    return pt.getActualTypeArguments()[0];
+                }
+            }
+        }
+
+        throw new RuntimeException("Implement [Type savedType()]");
+    }
+
+    @Override
+    default JsonElement onSaveRaw() {
+        return saveFileGson.toJsonTree(onSave());
+    }
+
+    @Override
+    default void onLoadRaw(JsonElement value) {
+        if (value != null) {
+            T parsed = saveFileGson.fromJson(value, savedType());
+            onLoad(parsed);
+        } else {
+            onLoad(null);
+        }
+    }
+}
+```
+这个是```OnSave()```的代码，其中default指的是没有覆盖时所实现默认方法。这里面值得注意的是```CustomSavable<T>```里面的T在里面起到了万能类的作用，相当于数学的等价代换。```savedType()```中Type类型可以接受所有的类型，这里面我们再次使用Class对象[^13]来接受要存档的变量类型，并且最终存储可存档的类型。整段代码将保存的内容写在了本地的json文件上，实现了保存功能。当然里面有些细节还是比较复杂，不必全部掌握。
+
+[^13]:由于class对象要分析所有的类，所以class类本身也是泛型类，从上面的声明也可以看出。
+
+我们也可以限定泛型对象的范围，在模板中使用extends通配符就可以限定模板中的对象一定来自于某个类别。
+```Java
+BaseMod.addEvent(String eventID, Class <? extends AbstractEvent > eventClass)
+```
+这个是事件添加语法，第二项可以传入所有继承自AbstractEvent的子类。
+
+### 函数式编程
+
+mod制作中有些类需要子类专门复写他的特定方法，但重新创建子类是一件效率较低的事情，如果我们的对象自带一个函数来复写方法，java就会创建一个匿名子类专门用于复写，这样就无须我们再创建子类。这种对象自带方法并将方法传入的写法被称为函数式编程，把传入函数这一过程也成lambda表达式，这种写法来源于计算机发展早期的lisp语言。有时也称回调（callback）[^14]
+[^14]:多用于c语言的函数指针。
+```Java{.line-numbers}
+public interface GetMonsterGroup {
+		MonsterGroup get();
+	}//这个是对应的单方法接口
+
+	public static void addMonster(String encounterID, GetMonster monster) {
+		addMonster(encounterID, () -> new MonsterGroup(monster.get()));
+	}
+
+  	public static void addMonster(String encounterID, String name, GetMonsterGroup group) {
+		customMonsters.put(encounterID, group);
+		customMonsterNames.put(encounterID, name);
+		encounterList.add(encounterID);
+		if (encounterID.contains(" ")) {
+			underScoreEncounterIDs.put(encounterID.replace(' ', '_'), encounterID);
+		}
+	}
+```
+这里面有一个将单怪物通过函数变成怪物组的过程，其中GetMonsterGroup是一个单方法接口，为了创建一个其子类，需要复写其方法。所以上面的```() -> new MonsterGroup(monster.get())```本质上是以下写法的缩写。
+```Java
+  MonsterGroup get(){
+    return monster.get();//monster即是匿名类的对象。
+  }
+```
+我们可以发现lambda表达式中圆括号是要复写方法的形式参数，箭头后面是一句方法的主体部分（如果是多语句还是要使用花括号）。
+
+
+### 修补主程序
+
+用@符号开头的语句被称为注解[^15]，是专门用于编译器的信息语句，在程序运行中不起作用。ModTheSpire提供了让我们可以修补主程序的注解，我们使用了这些注解就相当于通知ModTheSpire这些代码要以特定方式覆盖主文件，而不需直接修改主文件。
+
+[^15]:我们已经用过很多次的@override就属于注解之一，这个注解来自于java官方。如果学过c或者c++应该对#开头的命令很熟悉，注解的本质与c系语言的宏是非常类似的。
